@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Term Docket</title>
+<style>
+  :root {
+    --paper: #EEF5F3;
+    --paper-raised: #FFFFFF;
+    --ink: #163A4D;
+    --ink-soft: #4F7181;
+    --ink-faint: #93ABAE;
+    --rule: #CFE3DD;
+    --rule-strong: #9FC6BB;
+    --brass: #2E7D6B;
+    --overdue: #B5502E;
+    --overdue-bg: #F7E7DF;
+    --done: #2F7D5E;
+    --done-bg: #E3F0E9;
+    --env: #2E7D4F;
+    --env-bg: #DFEEE2;
+    --disc: #235F8C;
+    --disc-bg: #DCE9F2;
+    --gender: #1E7A78;
+    --gender-bg: #DCEEEC;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 40px 32px 64px; }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 18px;
+    margin-bottom: 6px;
+    animation: settle 0.5s ease-out;
+  }
+  @keyframes settle { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+  header h1 { font-family: Arial, Helvetica, sans-serif; font-weight: 700; font-size: 34px; margin: 0; letter-spacing: -0.01em; }
+  header p { margin: 4px 0 0; color: var(--ink-soft); font-size: 14px; }
+  .filed-as { text-align: right; font-size: 12.5px; color: var(--ink-faint); font-style: italic; font-family: Arial, Helvetica, sans-serif; }
+
+  h2.section-title {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 19px;
+    font-weight: 600;
+    margin: 40px 0 4px;
+    border-bottom: 1px solid var(--rule-strong);
+    padding-bottom: 8px;
+  }
+  h2.section-title:first-of-type { margin-top: 30px; }
+  .section-sub { color: var(--ink-soft); font-size: 13px; margin: 0 0 16px; }
+
+  /* This week card */
+  .week-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 18px 22px;
+  }
+  .week-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .week-nav { display: flex; align-items: center; gap: 10px; }
+  .week-nav button {
+    background: var(--paper);
+    border: 1px solid var(--rule-strong);
+    border-radius: 3px;
+    width: 28px; height: 28px;
+    font-size: 15px;
+    cursor: pointer;
+    color: var(--ink);
+  }
+  .week-nav button:disabled { opacity: 0.35; cursor: default; }
+  .week-title { font-family: Arial, Helvetica, sans-serif; font-size: 20px; font-weight: 600; }
+  .week-progress { font-size: 13px; color: var(--ink-soft); }
+
+  .week-items { display: flex; flex-direction: column; gap: 0; }
+  .week-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .week-item:last-child { border-bottom: none; }
+  .subj-chip {
+    font-size: 11px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    flex-shrink: 0;
+    width: 78px;
+    text-align: center;
+  }
+  .week-item-body { flex: 1; }
+  .week-item-label { font-size: 14.5px; }
+  .week-item.wdone .week-item-label { text-decoration: line-through; color: var(--ink-faint); }
+  .week-item-day { font-size: 12px; color: var(--ink-soft); margin-top: 1px; }
+
+  .check {
+    width: 18px; height: 18px;
+    border: 1.5px solid var(--ink-soft);
+    border-radius: 50%;
+    background: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--paper-raised);
+  }
+  .check.checked { background: var(--done); border-color: var(--done); }
+  .check svg { width: 10px; height: 10px; }
+
+  /* Term grid */
+  .grid-scroll { overflow-x: auto; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper-raised); }
+  table.term-grid { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 13px; }
+  table.term-grid th, table.term-grid td { padding: 8px 10px; text-align: center; border-bottom: 1px solid var(--rule); }
+  table.term-grid th { font-family: Arial, Helvetica, sans-serif; font-weight: 600; }
+  .grp-head { font-size: 12px; padding: 8px 6px; }
+  .grp-head .code { display: block; font-size: 10.5px; font-weight: 400; opacity: 0.8; }
+  table.term-grid td.week-label, table.term-grid th.week-label {
+    text-align: left; font-family: Arial, Helvetica, sans-serif; font-weight: 600; white-space: nowrap;
+    border-right: 1px solid var(--rule-strong);
+  }
+  table.term-grid tr.current-week td { background: var(--paper); }
+  table.term-grid tr.current-week td.week-label { border-left: 3px solid var(--ink); }
+  table.term-grid td.item-col { border-right: 1px solid var(--rule); }
+  .grid-add-row { padding: 8px 10px; text-align: left; }
+  .link-btn { background: none; border: none; color: var(--ink-soft); font-size: 12.5px; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+  .link-btn:hover { color: var(--ink); }
+
+  /* Stats + toolbar (individual tasks) */
+  .stats { display: flex; border-bottom: 1px solid var(--rule); margin-bottom: 22px; margin-top: 4px; }
+  .stat { flex: 1; padding: 14px 18px; border-right: 1px solid var(--rule); }
+  .stat:last-child { border-right: none; }
+  .stat .num { font-family: Arial, Helvetica, sans-serif; font-size: 24px; font-weight: 600; display: block; }
+  .stat.overdue .num { color: var(--overdue); }
+  .stat .label { font-size: 12.5px; color: var(--ink-soft); }
+
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .view-toggle { display: flex; border: 1px solid var(--rule-strong); border-radius: 3px; overflow: hidden; }
+  .view-toggle button { background: var(--paper-raised); border: none; padding: 7px 16px; font-family: Arial, Helvetica, sans-serif; font-size: 13.5px; color: var(--ink-soft); cursor: pointer; }
+  .view-toggle button + button { border-left: 1px solid var(--rule-strong); }
+  .view-toggle button.active { background: var(--ink); color: var(--paper); }
+  .clear-btn { background: none; border: none; color: var(--ink-faint); font-size: 12.5px; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+  .clear-btn:hover { color: var(--overdue); }
+
+  .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  @media (max-width: 860px) { .board { grid-template-columns: 1fr; } }
+
+  .column { background: var(--paper-raised); border: 1px solid var(--rule); border-top: 4px solid var(--col-accent); border-radius: 2px; display: flex; flex-direction: column; min-height: 160px; }
+  .column-head { padding: 14px 16px 10px; border-bottom: 1px solid var(--rule); }
+  .column-head h3 { font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 600; margin: 0 0 3px; color: var(--col-accent); line-height: 1.25; }
+  .column-head .meta { font-size: 12px; color: var(--ink-soft); }
+
+  .task-list { padding: 6px 10px; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+  .task-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 6px; border-radius: 3px; border-bottom: 1px solid var(--rule); }
+  .task-row:last-child { border-bottom: none; }
+  .task-row:hover { background: var(--paper); }
+  .task-row.overdue { background: var(--overdue-bg); }
+  .task-row.done { opacity: 0.55; }
+  .task-row .check { margin-top: 2px; }
+
+  .task-body { flex: 1; min-width: 0; }
+  .task-title { font-size: 14px; line-height: 1.35; word-break: break-word; }
+  .task-row.done .task-title { text-decoration: line-through; }
+  .task-meta { display: flex; gap: 8px; margin-top: 3px; align-items: center; flex-wrap: wrap; }
+  .due-pill { font-size: 11.5px; color: var(--ink-soft); }
+  .due-pill.is-overdue { color: var(--overdue); font-weight: 600; }
+  .type-tag { font-size: 11px; color: var(--ink-faint); font-style: italic; font-family: Arial, Helvetica, sans-serif; }
+  .row-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .icon-btn { background: none; border: none; cursor: pointer; color: var(--ink-faint); font-size: 14px; padding: 2px; line-height: 1; }
+  .icon-btn:hover { color: var(--ink); }
+  .icon-btn.starred { color: var(--brass); }
+  .empty-note { padding: 18px 8px; color: var(--ink-faint); font-size: 13px; font-style: italic; font-family: Arial, Helvetica, sans-serif; }
+
+  .add-toggle { margin: 6px 10px 12px; background: none; border: 1px dashed var(--rule-strong); border-radius: 3px; padding: 8px 10px; text-align: left; color: var(--ink-soft); font-size: 13px; cursor: pointer; font-family: Arial, Helvetica, sans-serif; width: calc(100% - 20px); }
+  .add-toggle:hover { border-color: var(--ink-soft); color: var(--ink); }
+  .add-form { margin: 6px 10px 14px; padding: 10px; background: var(--paper); border: 1px solid var(--rule); border-radius: 3px; display: flex; flex-direction: column; gap: 7px; }
+  .add-form input, .add-form select { font-family: Arial, Helvetica, sans-serif; font-size: 13.5px; padding: 6px 8px; border: 1px solid var(--rule-strong); border-radius: 3px; background: var(--paper-raised); color: var(--ink); width: 100%; }
+  .add-form .row2 { display: flex; gap: 7px; }
+  .add-form .row2 > * { flex: 1; }
+  .add-form .form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 2px; }
+  .add-form button { font-family: Arial, Helvetica, sans-serif; font-size: 13px; padding: 6px 12px; border-radius: 3px; cursor: pointer; }
+  .btn-primary { background: var(--ink); color: var(--paper); border: 1px solid var(--ink); }
+  .btn-ghost { background: none; border: 1px solid var(--rule-strong); color: var(--ink-soft); }
+  .field-error { font-size: 12px; color: var(--overdue); margin: -3px 0 0; }
+
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .tl-group { border-bottom: 1px solid var(--rule); padding: 14px 0; }
+  .tl-group:first-child { padding-top: 0; }
+  .tl-date { font-family: Arial, Helvetica, sans-serif; font-weight: 600; font-size: 15px; margin-bottom: 8px; color: var(--ink); }
+  .tl-date.is-overdue { color: var(--overdue); }
+  .tl-row { display: flex; align-items: center; gap: 10px; padding: 6px 4px; }
+  .tl-row .task-body { flex: 1; }
+  .tl-row .subj-label { font-size: 11.5px; color: var(--ink-soft); margin-left: 4px; }
+
+  footer { margin-top: 36px; padding-top: 12px; border-top: 1px solid var(--rule); text-align: right; }
+  .loading { padding: 60px 0; text-align: center; color: var(--ink-faint); font-family: Arial, Helvetica, sans-serif; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Term Docket</h1>
+      <p>Weekly obligations and individual matters, across three units</p>
+    </div>
+    <div class="filed-as" id="filed-as"></div>
+  </header>
+
+  <h2 class="section-title">This week</h2>
+  <div id="week-card"><div class="loading">Opening the docket…</div></div>
+
+  <h2 class="section-title">Full term</h2>
+  <p class="section-sub">Every week's recurring items, at a glance. Tick up any weeks you fell behind on.</p>
+  <div id="term-grid"></div>
+
+  <h2 class="section-title">Individual tasks</h2>
+  <p class="section-sub">Assignments, essays, exams — anything that isn't weekly.</p>
+  <div class="stats" id="stats"></div>
+  <div class="toolbar">
+    <div class="view-toggle">
+      <button id="btn-board" class="active">By subject</button>
+      <button id="btn-timeline">Timeline</button>
+    </div>
+    <button class="clear-btn" id="clear-tasks-btn">Clear individual tasks</button>
+  </div>
+  <div id="content"></div>
+
+  <footer>
+    <span class="filed-as">Stored privately in this artifact — not shared.</span>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  var SUBJECTS = [
+    { id: 'env', name: 'Environmental Law', code: 'LAWS3361', accent: 'var(--env)', bg: 'var(--env-bg)' },
+    { id: 'disc', name: 'Discrimination and the Law', code: 'LAWS3412', accent: 'var(--disc)', bg: 'var(--disc-bg)' },
+    { id: 'gender', name: 'Gender, Intimacy and Social Change in China', code: 'ARTS2455', accent: 'var(--gender)', bg: 'var(--gender-bg)' }
+  ];
+  var RECURRING = [
+    { id: 'r1', subject: 'env', label: 'Weekly notes', day: 'Tue' },
+    { id: 'r2', subject: 'env', label: 'Moodle online activities', day: null },
+    { id: 'r3', subject: 'disc', label: 'Tuesday class notes', day: 'Tue' },
+    { id: 'r4', subject: 'disc', label: 'Friday class notes', day: 'Fri' },
+    { id: 'r5', subject: 'gender', label: 'Watch lecture', day: null },
+    { id: 'r6', subject: 'gender', label: 'Weekly notes', day: 'Wed' }
+  ];
+  var TYPES = ['Reading', 'Class prep', 'Assignment', 'Essay', 'Exam', 'Quiz', 'Participation', 'Other'];
+  var SEED_KEY = 'uni-docket-seed-oct2026';
+  var DEFAULT_TASKS = [
+    { subject: 'env', title: 'Midterm (due 7:00pm Sydney time)', due: '2026-10-19', type: 'Exam' },
+    { subject: 'env', title: 'Final essay', due: '2026-11-18', type: 'Essay' },
+    { subject: 'disc', title: 'Midterm (window opens Wed 21 Oct 9:00am, due Fri 23 Oct 11:59pm)', due: '2026-10-23', type: 'Exam' },
+    { subject: 'gender', title: 'Quiz (Week 5)', due: '', type: 'Quiz' },
+    { subject: 'gender', title: 'Quiz (Week 10)', due: '', type: 'Quiz' },
+    { subject: 'gender', title: 'Essay (due Friday of Week 10)', due: '', type: 'Essay' }
+  ];
+  var TASKS_KEY = 'uni-docket-tasks';
+  var WEEKLY_KEY = 'uni-docket-weekly';
+  var DEFAULT_WEEK_COUNT = 10;
+
+  var state = {
+    tasks: [],
+    view: 'board',
+    openForm: null,
+    weekly: { currentWeek: 1, weekCount: DEFAULT_WEEK_COUNT, done: {} }
+  };
+
+  function uid() { return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function subjectOf(id) { for (var i = 0; i < SUBJECTS.length; i++) if (SUBJECTS[i].id === id) return SUBJECTS[i]; return SUBJECTS[0]; }
+  function todayISO() { var d = new Date(); d.setHours(0,0,0,0); return d.toISOString().slice(0,10); }
+  function daysBetween(iso) { var d = new Date(iso + 'T00:00:00'); var t = new Date(todayISO() + 'T00:00:00'); return Math.round((d - t) / 86400000); }
+  function formatDue(iso) {
+    if (!iso) return 'No date';
+    var diff = daysBetween(iso);
+    if (diff === 0) return 'Today';
+    if (diff === 1) return 'Tomorrow';
+    if (diff === -1) return 'Yesterday';
+    var d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+  }
+  function isOverdue(t) { return t.due && !t.done && daysBetween(t.due) < 0; }
+  function isDueSoon(t) { return t.due && !t.done && daysBetween(t.due) >= 0 && daysBetween(t.due) <= 7; }
+  function escapeHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  function checkSvg() { return '<svg viewBox="0 0 10 10" fill="none"><path d="M1.5 5L4 7.5L8.5 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'; }
+  function weeklyKey(week, itemId) { return week + '_' + itemId; }
+
+  async function loadAll() {
+    try {
+      var res = await window.storage.get(TASKS_KEY, false);
+      state.tasks = res && res.value ? JSON.parse(res.value) : [];
+    } catch (e) { state.tasks = []; }
+    try {
+      var res2 = await window.storage.get(WEEKLY_KEY, false);
+      if (res2 && res2.value) {
+        var parsed = JSON.parse(res2.value);
+        state.weekly.currentWeek = parsed.currentWeek || 1;
+        state.weekly.weekCount = parsed.weekCount || DEFAULT_WEEK_COUNT;
+        state.weekly.done = parsed.done || {};
+      }
+    } catch (e) { /* keep defaults */ }
+    try {
+      await window.storage.get(SEED_KEY, false);
+    } catch (e) {
+      DEFAULT_TASKS.forEach(function (d) {
+        state.tasks.push({ id: uid(), subject: d.subject, title: d.title, due: d.due, type: d.type, starred: false, done: false, createdAt: Date.now() });
+      });
+      await saveTasks();
+      try { await window.storage.set(SEED_KEY, '1', false); } catch (e2) { /* ignore */ }
+    }
+    renderAll();
+  }
+
+  async function saveTasks() {
+    try { await window.storage.set(TASKS_KEY, JSON.stringify(state.tasks), false); }
+    catch (e) { console.error('Could not save tasks', e); }
+  }
+  async function saveWeekly() {
+    try { await window.storage.set(WEEKLY_KEY, JSON.stringify(state.weekly), false); }
+    catch (e) { console.error('Could not save weekly state', e); }
+  }
+
+  function toggleWeeklyItem(week, itemId) {
+    var key = weeklyKey(week, itemId);
+    state.weekly.done[key] = !state.weekly.done[key];
+    saveWeekly();
+    renderAll();
+  }
+  function changeWeek(delta) {
+    var next = state.weekly.currentWeek + delta;
+    if (next < 1) next = 1;
+    if (next > state.weekly.weekCount) next = state.weekly.weekCount;
+    state.weekly.currentWeek = next;
+    saveWeekly();
+    renderAll();
+  }
+  function addWeek() { state.weekly.weekCount += 1; saveWeekly(); renderAll(); }
+  function removeLastWeek() {
+    if (state.weekly.weekCount <= 1) return;
+    var w = state.weekly.weekCount;
+    RECURRING.forEach(function (item) { delete state.weekly.done[weeklyKey(w, item.id)]; });
+    state.weekly.weekCount -= 1;
+    if (state.weekly.currentWeek > state.weekly.weekCount) state.weekly.currentWeek = state.weekly.weekCount;
+    saveWeekly();
+    renderAll();
+  }
+
+  function renderWeekCard() {
+    var w = state.weekly.currentWeek;
+    var doneCount = 0;
+    var itemsHtml = RECURRING.map(function (item) {
+      var s = subjectOf(item.subject);
+      var isDone = !!state.weekly.done[weeklyKey(w, item.id)];
+      if (isDone) doneCount++;
+      return (
+        '<div class="week-item' + (isDone ? ' wdone' : '') + '">' +
+          '<button class="check' + (isDone ? ' checked' : '') + '" onclick="App.toggleWeeklyItem(' + w + ',\'' + item.id + '\')" aria-label="Mark done">' + (isDone ? checkSvg() : '') + '</button>' +
+          '<span class="subj-chip" style="background:' + s.bg + ';color:' + s.accent + '">' + s.code + '</span>' +
+          '<div class="week-item-body">' +
+            '<div class="week-item-label">' + escapeHtml(item.label) + '</div>' +
+            '<div class="week-item-day">' + (item.day ? 'Due ' + item.day : 'Due sometime this week') + '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join('');
+
+    var html =
+      '<div class="week-card">' +
+        '<div class="week-card-head">' +
+          '<div class="week-nav">' +
+            '<button onclick="App.changeWeek(-1)"' + (w <= 1 ? ' disabled' : '') + '>&#8249;</button>' +
+            '<span class="week-title">Week ' + w + ' of ' + state.weekly.weekCount + '</span>' +
+            '<button onclick="App.changeWeek(1)"' + (w >= state.weekly.weekCount ? ' disabled' : '') + '>&#8250;</button>' +
+          '</div>' +
+          '<span class="week-progress">' + doneCount + ' of ' + RECURRING.length + ' done</span>' +
+        '</div>' +
+        '<div class="week-items">' + itemsHtml + '</div>' +
+      '</div>';
+    document.getElementById('week-card').innerHTML = html;
+  }
+
+  function renderTermGrid() {
+    var head = '<tr><th class="week-label">Week</th>';
+    SUBJECTS.forEach(function (s) {
+      var items = RECURRING.filter(function (r) { return r.subject === s.id; });
+      items.forEach(function (item) {
+        head += '<th class="grp-head item-col" style="background:' + s.bg + ';color:' + s.accent + '">' + item.label + (item.day ? '<span class="code">' + item.day + '</span>' : '<span class="code">' + s.code + '</span>') + '</th>';
+      });
+    });
+    head += '</tr>';
+
+    var rows = '';
+    for (var w = 1; w <= state.weekly.weekCount; w++) {
+      var isCurrent = w === state.weekly.currentWeek;
+      rows += '<tr class="' + (isCurrent ? 'current-week' : '') + '"><td class="week-label">Week ' + w + '</td>';
+      SUBJECTS.forEach(function (s) {
+        var items = RECURRING.filter(function (r) { return r.subject === s.id; });
+        items.forEach(function (item) {
+          var isDone = !!state.weekly.done[weeklyKey(w, item.id)];
+          rows += '<td class="item-col"><button class="check' + (isDone ? ' checked' : '') + '" onclick="App.toggleWeeklyItem(' + w + ',\'' + item.id + '\')" aria-label="Toggle">' + (isDone ? checkSvg() : '') + '</button></td>';
+        });
+      });
+      rows += '</tr>';
+    }
+
+    var html =
+      '<div class="grid-scroll"><table class="term-grid"><thead>' + head + '</thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div class="grid-add-row"><button class="link-btn" onclick="App.addWeek()">+ Add a week</button> &nbsp;·&nbsp; <button class="link-btn" onclick="App.removeLastWeek()">Remove last week</button></div>';
+    document.getElementById('term-grid').innerHTML = html;
+  }
+
+  function addTask(subjectId, data) {
+    state.tasks.push({ id: uid(), subject: subjectId, title: data.title, due: data.due || '', type: data.type, starred: false, done: false, createdAt: Date.now() });
+    state.openForm = null;
+    saveTasks();
+    renderTasks();
+  }
+  function toggleDone(id) { var t = state.tasks.find(function (x) { return x.id === id; }); if (t) t.done = !t.done; saveTasks(); renderTasks(); }
+  function toggleStar(id) { var t = state.tasks.find(function (x) { return x.id === id; }); if (t) t.starred = !t.starred; saveTasks(); renderTasks(); }
+  function deleteTask(id) { state.tasks = state.tasks.filter(function (x) { return x.id !== id; }); saveTasks(); renderTasks(); }
+  function clearTasks() {
+    var btn = document.getElementById('clear-tasks-btn');
+    if (btn.dataset.confirming === '1') {
+      state.tasks = [];
+      saveTasks();
+      renderTasks();
+      btn.textContent = 'Clear individual tasks';
+      btn.dataset.confirming = '0';
+    } else {
+      btn.textContent = 'Click again to confirm';
+      btn.dataset.confirming = '1';
+      setTimeout(function () {
+        if (btn.dataset.confirming === '1') { btn.textContent = 'Clear individual tasks'; btn.dataset.confirming = '0'; }
+      }, 3000);
+    }
+  }
+
+  function renderStats() {
+    var open = state.tasks.filter(function (t) { return !t.done; });
+    var overdue = open.filter(isOverdue).length;
+    var soon = open.filter(isDueSoon).length;
+    document.getElementById('stats').innerHTML =
+      '<div class="stat"><span class="num">' + open.length + '</span><span class="label">Open matters</span></div>' +
+      '<div class="stat"><span class="num">' + soon + '</span><span class="label">Due within 7 days</span></div>' +
+      '<div class="stat overdue"><span class="num">' + overdue + '</span><span class="label">Overdue</span></div>';
+  }
+
+  function taskRowHtml(t, opts) {
+    opts = opts || {};
+    var overdue = isOverdue(t);
+    var cls = 'task-row' + (t.done ? ' done' : '') + (overdue ? ' overdue' : '');
+    var dueCls = overdue ? 'due-pill is-overdue' : 'due-pill';
+    var subjLabel = opts.showSubject ? '<span class="subj-label">' + subjectOf(t.subject).name + '</span>' : '';
+    return (
+      '<div class="' + cls + '">' +
+        '<button class="check' + (t.done ? ' checked' : '') + '" onclick="App.toggleDone(\'' + t.id + '\')" aria-label="Mark done">' + (t.done ? checkSvg() : '') + '</button>' +
+        '<div class="task-body">' +
+          '<div class="task-title">' + escapeHtml(t.title) + '</div>' +
+          '<div class="task-meta"><span class="' + dueCls + '">' + formatDue(t.due) + (overdue ? ' · overdue' : '') + '</span><span class="type-tag">' + t.type + '</span>' + subjLabel + '</div>' +
+        '</div>' +
+        '<div class="row-actions">' +
+          '<button class="icon-btn' + (t.starred ? ' starred' : '') + '" onclick="App.toggleStar(\'' + t.id + '\')" title="Flag">&#9733;</button>' +
+          '<button class="icon-btn" onclick="App.deleteTask(\'' + t.id + '\')" title="Remove">&times;</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+  function sortTasks(list) {
+    return list.slice().sort(function (a, b) {
+      if (a.done !== b.done) return a.done ? 1 : -1;
+      if (!a.due && !b.due) return a.title.localeCompare(b.title);
+      if (!a.due) return 1;
+      if (!b.due) return -1;
+      return a.due.localeCompare(b.due);
+    });
+  }
+  function addFormHtml(subjectId) {
+    return (
+      '<div class="add-form">' +
+        '<input type="text" id="new-title-' + subjectId + '" placeholder="e.g. Draft essay, book class 6 room change" />' +
+        '<div id="err-' + subjectId + '"></div>' +
+        '<div class="row2">' +
+          '<input type="date" id="new-due-' + subjectId + '" />' +
+          '<select id="new-type-' + subjectId + '">' + TYPES.map(function (t) { return '<option value="' + t + '">' + t + '</option>'; }).join('') + '</select>' +
+        '</div>' +
+        '<div class="form-actions"><button class="btn-ghost" onclick="App.cancelForm()">Cancel</button><button class="btn-primary" onclick="App.submitForm(\'' + subjectId + '\')">Add task</button></div>' +
+      '</div>'
+    );
+  }
+  function renderBoard() {
+    var html = '<div class="board">';
+    SUBJECTS.forEach(function (s) {
+      var tasks = sortTasks(state.tasks.filter(function (t) { return t.subject === s.id; }));
+      var open = tasks.filter(function (t) { return !t.done; }).length;
+      var overdue = tasks.filter(isOverdue).length;
+      html += '<div class="column" style="--col-accent:' + s.accent + '">';
+      html += '<div class="column-head"><h3>' + s.name + '</h3><div class="meta">' + open + ' open' + (overdue ? ' · ' + overdue + ' overdue' : '') + ' · ' + s.code + '</div></div>';
+      html += '<div class="task-list">';
+      if (tasks.length === 0) html += '<div class="empty-note">No individual tasks yet.</div>';
+      else tasks.forEach(function (t) { html += taskRowHtml(t); });
+      html += '</div>';
+      if (state.openForm === s.id) html += addFormHtml(s.id);
+      else html += '<button class="add-toggle" onclick="App.openForm(\'' + s.id + '\')">+ Add task</button>';
+      html += '</div>';
+    });
+    html += '</div>';
+    document.getElementById('content').innerHTML = html;
+    if (state.openForm) { var input = document.getElementById('new-title-' + state.openForm); if (input) input.focus(); }
+  }
+  function renderTimeline() {
+    var open = sortTasks(state.tasks.filter(function (t) { return !t.done; }));
+    var done = sortTasks(state.tasks.filter(function (t) { return t.done; }));
+    var groups = {}; var order = [];
+    open.forEach(function (t) { var key = t.due || 'No date'; if (!groups[key]) { groups[key] = []; order.push(key); } groups[key].push(t); });
+    var html = '<div class="timeline">';
+    if (order.length === 0 && done.length === 0) html += '<div class="empty-note">No individual tasks yet — add one from the subject board.</div>';
+    order.forEach(function (key) {
+      var label = key === 'No date' ? 'No date set' : formatDue(key);
+      var overdueGroup = key !== 'No date' && daysBetween(key) < 0;
+      html += '<div class="tl-group"><div class="tl-date' + (overdueGroup ? ' is-overdue' : '') + '">' + label + '</div>';
+      groups[key].forEach(function (t) { html += '<div class="tl-row">' + taskRowHtml(t, { showSubject: true }) + '</div>'; });
+      html += '</div>';
+    });
+    if (done.length) {
+      html += '<div class="tl-group"><div class="tl-date">Done</div>';
+      done.forEach(function (t) { html += '<div class="tl-row">' + taskRowHtml(t, { showSubject: true }) + '</div>'; });
+      html += '</div>';
+    }
+    html += '</div>';
+    document.getElementById('content').innerHTML = html;
+  }
+  function renderTasks() {
+    renderStats();
+    if (state.view === 'board') renderBoard(); else renderTimeline();
+    document.getElementById('btn-board').classList.toggle('active', state.view === 'board');
+    document.getElementById('btn-timeline').classList.toggle('active', state.view === 'timeline');
+  }
+
+  function renderAll() {
+    renderWeekCard();
+    renderTermGrid();
+    renderTasks();
+  }
+
+  var App = {
+    toggleWeeklyItem: toggleWeeklyItem,
+    changeWeek: changeWeek,
+    addWeek: addWeek,
+    removeLastWeek: removeLastWeek,
+    toggleDone: toggleDone,
+    toggleStar: toggleStar,
+    deleteTask: deleteTask,
+    openForm: function (subjectId) { state.openForm = subjectId; renderTasks(); },
+    cancelForm: function () { state.openForm = null; renderTasks(); },
+    submitForm: function (subjectId) {
+      var titleEl = document.getElementById('new-title-' + subjectId);
+      var dueEl = document.getElementById('new-due-' + subjectId);
+      var typeEl = document.getElementById('new-type-' + subjectId);
+      var errEl = document.getElementById('err-' + subjectId);
+      var title = titleEl.value.trim();
+      if (!title) { errEl.innerHTML = '<p class="field-error">Enter a task before adding it.</p>'; titleEl.focus(); return; }
+      addTask(subjectId, { title: title, due: dueEl.value, type: typeEl.value });
+    }
+  };
+  window.App = App;
+
+  document.getElementById('btn-board').addEventListener('click', function () { state.view = 'board'; renderTasks(); });
+  document.getElementById('btn-timeline').addEventListener('click', function () { state.view = 'timeline'; renderTasks(); });
+  document.getElementById('clear-tasks-btn').addEventListener('click', clearTasks);
+  document.getElementById('filed-as').textContent = 'Filed as of ' + new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  loadAll();
+})();
+</script>
+</body>
+</html>
