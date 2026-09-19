@@ -310,13 +310,24 @@
   function checkSvg() { return '<svg viewBox="0 0 10 10" fill="none"><path d="M1.5 5L4 7.5L8.5 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'; }
   function weeklyKey(week, itemId) { return week + '_' + itemId; }
 
+  function storageGet(key) {
+    try {
+      var v = localStorage.getItem(key);
+      return v === null ? null : { value: v };
+    } catch (e) { return null; }
+  }
+  function storageSet(key, value) {
+    try { localStorage.setItem(key, value); return true; }
+    catch (e) { console.error('Could not save', key, e); return false; }
+  }
+
   async function loadAll() {
     try {
-      var res = await window.storage.get(TASKS_KEY, false);
+      var res = storageGet(TASKS_KEY);
       state.tasks = res && res.value ? JSON.parse(res.value) : [];
     } catch (e) { state.tasks = []; }
     try {
-      var res2 = await window.storage.get(WEEKLY_KEY, false);
+      var res2 = storageGet(WEEKLY_KEY);
       if (res2 && res2.value) {
         var parsed = JSON.parse(res2.value);
         state.weekly.currentWeek = parsed.currentWeek || 1;
@@ -324,25 +335,21 @@
         state.weekly.done = parsed.done || {};
       }
     } catch (e) { /* keep defaults */ }
-    try {
-      await window.storage.get(SEED_KEY, false);
-    } catch (e) {
+    if (!storageGet(SEED_KEY)) {
       DEFAULT_TASKS.forEach(function (d) {
         state.tasks.push({ id: uid(), subject: d.subject, title: d.title, due: d.due, type: d.type, starred: false, done: false, createdAt: Date.now() });
       });
-      await saveTasks();
-      try { await window.storage.set(SEED_KEY, '1', false); } catch (e2) { /* ignore */ }
+      saveTasks();
+      storageSet(SEED_KEY, '1');
     }
     renderAll();
   }
 
   async function saveTasks() {
-    try { await window.storage.set(TASKS_KEY, JSON.stringify(state.tasks), false); }
-    catch (e) { console.error('Could not save tasks', e); }
+    storageSet(TASKS_KEY, JSON.stringify(state.tasks));
   }
   async function saveWeekly() {
-    try { await window.storage.set(WEEKLY_KEY, JSON.stringify(state.weekly), false); }
-    catch (e) { console.error('Could not save weekly state', e); }
+    storageSet(WEEKLY_KEY, JSON.stringify(state.weekly));
   }
 
   function toggleWeeklyItem(week, itemId) {
