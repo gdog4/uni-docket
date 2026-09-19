@@ -265,13 +265,14 @@
   var RECURRING = [
     { id: 'r1', subject: 'env', label: 'Weekly notes', day: 'Tue' },
     { id: 'r2', subject: 'env', label: 'Moodle online activities', day: null },
-    { id: 'r3', subject: 'disc', label: 'Tuesday class notes', day: 'Tue' },
-    { id: 'r4', subject: 'disc', label: 'Friday class notes', day: 'Fri' },
+    { id: 'r3', subject: 'disc', label: 'Weekly notes', day: 'Tue' },
+    { id: 'r4', subject: 'disc', label: 'Weekly notes', day: 'Fri' },
     { id: 'r5', subject: 'gender', label: 'Watch lecture', day: null },
     { id: 'r6', subject: 'gender', label: 'Weekly notes', day: 'Wed' }
   ];
-  var TYPES = ['Reading', 'Class prep', 'Assignment', 'Essay', 'Exam', 'Quiz', 'Participation', 'Other'];
+  var TYPES = ['Reading', 'Class prep', 'Assignment', 'Essay', 'Exam', 'Quiz', 'Presentation', 'Participation', 'Other'];
   var SEED_KEY = 'uni-docket-seed-oct2026';
+  var SEED_KEY_2 = 'uni-docket-seed-presentation';
   var DEFAULT_TASKS = [
     { subject: 'env', title: 'Midterm (due 7:00pm Sydney time)', due: '2026-10-19', type: 'Exam' },
     { subject: 'env', title: 'Final essay', due: '2026-11-18', type: 'Essay' },
@@ -279,6 +280,9 @@
     { subject: 'gender', title: 'Quiz (Week 5)', due: '', type: 'Quiz' },
     { subject: 'gender', title: 'Quiz (Week 10)', due: '', type: 'Quiz' },
     { subject: 'gender', title: 'Essay (due Friday of Week 10)', due: '', type: 'Essay' }
+  ];
+  var DEFAULT_TASKS_2 = [
+    { subject: 'gender', title: 'Presentation', due: '2026-09-30', type: 'Presentation' }
   ];
   var TASKS_KEY = 'uni-docket-tasks';
   var WEEKLY_KEY = 'uni-docket-weekly';
@@ -341,6 +345,13 @@
       });
       saveTasks();
       storageSet(SEED_KEY, '1');
+    }
+    if (!storageGet(SEED_KEY_2)) {
+      DEFAULT_TASKS_2.forEach(function (d) {
+        state.tasks.push({ id: uid(), subject: d.subject, title: d.title, due: d.due, type: d.type, starred: false, done: false, createdAt: Date.now() });
+      });
+      saveTasks();
+      storageSet(SEED_KEY_2, '1');
     }
     renderAll();
   }
